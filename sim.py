@@ -1,5 +1,5 @@
 import numpy as np
-from spring_mass_damper import get_kd, get_ABCD_desc
+from spring_mass_damper import get_kd, get_ABCD_disc
 import matplotlib.pyplot as plt
 
 # Define the system model
@@ -9,7 +9,7 @@ zeta = 0.1
 m = 1
 
 k,d = get_kd(m, omega, zeta)
-A,B,C,D = get_ABCD_desc(k, m, d, Ts)
+A,B,C,D = get_ABCD_disc(k, m, d, Ts)
 n_states = B.shape[0]
 n_inputs = B.shape[1]
 
@@ -31,4 +31,9 @@ for i in range(1,N):
 
 x_pos = x_store[:,0,0]
 
-
+ax = plt.figure().subplots(1,1)
+time = np.arange(0,N*Ts,Ts)
+ax.plot(time, x_pos)
+ax.set_xlabel('time [s]')
+ax.set_ylabel('position')
+plt.show()
