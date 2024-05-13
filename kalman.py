@@ -44,12 +44,22 @@ class kalman:
         sigma_minus_x = self.A @ sigma_x_prev @ self.A.transpose() + self.sigma_w
 
         # step 1c
+        y_hat_t = self.C @ x_minus_t + self.D @ u_t
 
+        return x_minus_t, sigma_minus_x, y_hat_t
 
-        return
+    def step2(self, x_minus_t, sigma_minus_x, y_hat_t, y_t):
+        # step 2a calculate kalman gain
+        sigma_y = (self.C @ sigma_minus_x @ self.C.transpose() + self.sigma_v)
+        L = sigma_minus_x @ self.C.transpose() @ np.linalg.inv(sigma_y)
 
-    def step2(self):
-        return
+        # step 2b measurement update to state estimate
+        x_plus_t = x_minus_t + L @ (y_t - y_hat_t)
+
+        # step 2c measurement update to error covariance
+        sigma_plus_x = sigma_minus_x - L @ sigma_y @ L.transpose()
+
+        return x_plus_t, sigma_plus_x
 
     def simulate(self, x0, u, y):
         """
@@ -59,9 +69,18 @@ class kalman:
         y should be a series of column vectors of measurements
         y.shape() should give (N_steps, N_outputs, 1)
         """
-        N_steps = u.shape()[0]
+        N_steps = u.shape()[0] - 1
         x = np.zeros((N_steps+1, self.N_states, self.N_states))
+        sigma_x = np.zeros((N_steps+1, self.N_states, self.N_states))
         x[0] = x0
+        # assume that the initial state is known exactly:
+        sigma_x[0] = np.zeros((self.N_states, self.N_states))
+
         for t in range(1, N_steps+1):
-            self.step1()
-            self.step2()
+            x_minus_t, sigma_minus_x, y_hat_t = self.step1(x[t-1], u[t-1], u[t], sigma_x[t-1])
+            x_plus_t, sigma_plus_x = self.step2(x_minus_t, sigma_minus_x, y_hat_t, y[t])
+            x[t] = x_plus_t
+            sigma_x[t] = sigma_plus_x
+
+        return x, sigma_x
+
